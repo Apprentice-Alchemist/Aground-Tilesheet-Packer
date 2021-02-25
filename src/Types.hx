@@ -1,7 +1,5 @@
-import haxe.xml.Access;
 import haxe.io.Bytes;
 
-// @:nullSafety
 class Sheet {
 	public var id:String;
 	public var sheet:String;
@@ -49,16 +47,6 @@ class Frame {
 	public var equ:Null<Int>;
 
 	public function new() {}
-
-	public function p() {
-		Sys.print('x : $x ');
-		Sys.print('y : $y ');
-		Sys.print('width : $width ');
-		Sys.print('height : $height ');
-		Sys.print('offsetX : $offsetX ');
-		Sys.print('offsetY : $offsetY ');
-		Sys.println("");
-	}
 }
 
 @:forward
@@ -96,45 +84,6 @@ abstract Rectangle({
 		return contains(new Point(x, y));
 	}
 
-	public function add(r:Rectangle) {
-		inline function reshape(x,y,w,h) {
-			this.x = x;
-			this.y = y;
-			this.width = w;
-			this.height = h;
-		}
-		var tx2 = this.width;
-        var ty2 = this.height;
-        if ((tx2 | ty2) < 0) {
-            reshape(r.x, r.y, r.width, r.height);
-        }
-        var rx2 = r.width;
-        var ry2 = r.height;
-        if ((rx2 | ry2) < 0) {
-            return;
-        }
-        var tx1 = this.x;
-        var ty1 = this.y;
-        tx2 += tx1;
-        ty2 += ty1;
-        var rx1 = r.x;
-        var ry1 = r.y;
-        rx2 += rx1;
-        ry2 += ry1;
-        if (tx1 > rx1) tx1 = rx1;
-        if (ty1 > ry1) ty1 = ry1;
-        if (tx2 < rx2) tx2 = rx2;
-        if (ty2 < ry2) ty2 = ry2;
-        tx2 -= tx1;
-        ty2 -= ty1;
-        // tx2,ty2 will never underflow since both original
-        // rectangles were non-empty
-        // they might overflow, though...
-        // if (tx2 > Integer.MAX_VALUE) tx2 = Integer.MAX_VALUE;
-        // if (ty2 > Integer.MAX_VALUE) ty2 = Integer.MAX_VALUE;
-        reshape(tx1, ty1, tx2, ty2);
-	}
-
 	public function toString():String
 		return '[Rectangle]{${this.x} ${this.y} ${this.width} ${this.height}}';
 }
@@ -163,21 +112,19 @@ class Image {
 	}
 
 	public function blit(from:Image, fromBounds:Rectangle, toBounds:Rectangle) {
-		// var fmis = !from.bounds.contains(fromBounds);
-		// var tmis = !this.bounds.contains(toBounds);
-		// if (fmis || tmis){
-		// 	if(fmis) Sys.print("from ");
-		// 	if(tmis) Sys.print("to ");
-		// 	Sys.println("bounds mismatch");
-		// 	Sys.println("from.bounds : " + from.bounds.toString());
-		// 	Sys.println("fromBounds : " + fromBounds.toString());
-		// 	Sys.println("this.bounds : " + this.bounds.toString());
-		// 	Sys.println("toBounds : " + toBounds.toString());
-		// 	Sys.exit(0);
-		// }
-		// for(y in 0...toBounds.height){
-		// 	this.data.blit()
-		// }
+		var fmis = !from.bounds.contains(fromBounds);
+		var tmis = !this.bounds.contains(toBounds);
+		if (fmis || tmis){
+			if(fmis) Sys.print("from ");
+			if(tmis) Sys.print("to ");
+			Sys.println("bounds mismatch");
+			Sys.println("from.bounds : " + from.bounds.toString());
+			Sys.println("fromBounds : " + fromBounds.toString());
+			Sys.println("this.bounds : " + this.bounds.toString());
+			Sys.println("toBounds : " + toBounds.toString());
+			Sys.exit(0);
+		}
+
 		for (x in 0...toBounds.width) {
 			for (y in 0...toBounds.height) {
 				this.set(toBounds.x + x, toBounds.y + y, from.get(fromBounds.x + x, fromBounds.y + y));
@@ -191,7 +138,7 @@ class Image {
 
 	public function set(x:Int, y:Int, v:Int) {
 		var p = (x + y * bounds.width) * 4;
-		try data.setInt32(p, v) catch(_){};
+		data.setInt32(p, v);
 		return v;
 	}
 

@@ -1,6 +1,3 @@
-import haxe.macro.Context;
-import haxe.macro.Expr;
-
 #if macro
 using haxe.macro.Tools;
 #end
@@ -10,11 +7,14 @@ using haxe.macro.Tools;
 		throw "assert " + $v{e.toString()};
 }
 
-function error(msg:String) {
+inline function error(msg:String) {
 	Sys.println(msg);
 	Sys.exit(1);
 }
 
-function or<T>(v:Null<T>, o:T):T {
+inline function or<T>(v:Null<T>, o:T):T {
 	return v == null ? o : v;
 }
+
+inline function parseInt(s:Null<String>):Int
+	return s == null ? 0 : Std.parseInt(s);
