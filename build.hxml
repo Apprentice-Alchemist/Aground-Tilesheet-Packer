@@ -1,0 +1,4 @@
+-cp src
+-lib format
+# -cp C:\Program Files (x86)\Steam\steamapps\common\Aground
+--run Main
