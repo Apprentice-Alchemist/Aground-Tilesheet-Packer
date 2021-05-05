@@ -1,14 +1,15 @@
+import haxe.ds.Either;
 import haxe.io.Bytes;
 
 class Sheet {
 	public var id:String;
 	public var sheet:String;
 	public var frames:Array<Frame>;
-	public var width:Int;
-	public var height:Int;
-	public var offsetX:Int;
-	public var offsetY:Int;
-	
+	public var width:Int = 0;
+	public var height:Int = 0;
+	public var offsetX:Int = 0;
+	public var offsetY:Int = 0;
+
 	public function new(id:String, ?sheet:String) {
 		this.id = id;
 		this.sheet = sheet.or(id);
@@ -21,35 +22,75 @@ class Sheet {
 		ret.height = Std.parseInt(x.get("height")).or(0);
 		ret.offsetX = x.get("offsetX").parseInt().or(0);
 		ret.offsetY = x.get("offsetY").parseInt().or(0);
+		var frames = [];
 		for (f in x.elementsNamed("image")) {
-			var frame = new Frame();
-			frame.id = f.get("frame").parseInt().or(0);
-			frame.x = f.get("x").parseInt().or(0);
-			frame.y = f.get("y").parseInt().or(0);
-			frame.width = f.get("width").parseInt().or(0);
-			frame.height = f.get("height").parseInt().or(0);
-			frame.offsetX = f.get("offsetX").parseInt().or(0);
-			frame.offsetY = f.get("offsetY").parseInt().or(0);
-			ret.frames.push(frame);
+			if(f.exists("equals")) {
+				frames[f.get("frame").parseInt()] = Right(f.get("equals").parseInt());
+				continue;
+			}
+			var frame:Frame = {
+				id: f.get("frame").parseInt(),
+				x: f.get("x").parseInt(),
+				y: f.get("y").parseInt(),
+				width: f.get("width").parseInt(),
+				height: f.get("height").parseInt(),
+				offsetX: f.get("offsetX").parseInt(),
+				offsetY: f.get("offsetY").parseInt()
+			};
+			frames[f.get("frame").parseInt()] = Left(frame);
 		}
+		ret.frames = frames.map(f -> switch f {
+			case Left(v): v;
+			case Right(v): switch frames[v] {
+				case Left(v): v;
+				case _: throw "assert";
+			};
+		});
 		return ret;
 	}
 }
 
+@:structInit
 class Frame {
 	public var id:Int;
 	public var x:Int;
 	public var y:Int;
-	public var width:Null<Int>;
-	public var height:Null<Int>;
-	public var offsetX:Null<Int>;
-	public var offsetY:Null<Int>;
-	public var equ:Null<Int>;
-
-	public function new() {}
+	public var width:Int;
+	public var height:Int;
+	public var offsetX:Int;
+	public var offsetY:Int;
 }
 
 @:forward
+abstract Tile({
+	var image:Image;
+	var bounds:Rectangle;
+}) {
+	public function new(image:Image,bounds:Rectangle){
+		this = {
+			image: image,
+			bounds: bounds
+		}
+	}
+
+	@:op(A == B) static function comp(a:Tile, b:Tile) {
+		if (a.image == b.image && a.bounds == b.bounds)
+			return true;
+		if (a.bounds.width == b.bounds.width) {
+			for (x in 0...a.bounds.width) {
+				for (y in 0...a.bounds.height) {
+					if (a.image.get(a.bounds.x + x, a.bounds.y + y) != b.image.get(b.bounds.x + x, b.bounds.y + y)) {
+						return false;
+					}
+				}
+			}
+			return true;
+		}
+		return false;
+	}
+}
+
+@:forward(x,y,width,height)
 abstract Rectangle({
 	var x:Int;
 	var y:Int;
@@ -88,7 +129,7 @@ abstract Rectangle({
 		return '[Rectangle]{${this.x} ${this.y} ${this.width} ${this.height}}';
 }
 
-@:forward abstract Point({
+@:forward(x,y) abstract Point({
 	var x:Int;
 	var y:Int;
 }) {
@@ -114,9 +155,11 @@ class Image {
 	public function blit(from:Image, fromBounds:Rectangle, toBounds:Rectangle) {
 		var fmis = !from.bounds.contains(fromBounds);
 		var tmis = !this.bounds.contains(toBounds);
-		if (fmis || tmis){
-			if(fmis) Sys.print("from ");
-			if(tmis) Sys.print("to ");
+		if (fmis || tmis) {
+			if (fmis)
+				Sys.print("from ");
+			if (tmis)
+				Sys.print("to ");
 			Sys.println("bounds mismatch");
 			Sys.println("from.bounds : " + from.bounds.toString());
 			Sys.println("fromBounds : " + fromBounds.toString());
@@ -124,19 +167,20 @@ class Image {
 			Sys.println("toBounds : " + toBounds.toString());
 			Sys.exit(0);
 		}
-
-		for (x in 0...toBounds.width) {
-			for (y in 0...toBounds.height) {
-				this.set(toBounds.x + x, toBounds.y + y, from.get(fromBounds.x + x, fromBounds.y + y));
-			}
+		
+		for (y in 0...toBounds.height) {
+			data.blit(pos(toBounds.x,y),from.data,from.pos(fromBounds.x,y + fromBounds.y),toBounds.width * 4);
 		}
 	}
 
-	public function get(x:Int, y:Int):Int {
+	inline function pos(x:Int,y:Int):Int {
+		return (x + y * bounds.width) * 4;
+	}
+	public inline function get(x:Int, y:Int):Int {
 		return data.getInt32((x + y * bounds.width) * 4);
 	}
 
-	public function set(x:Int, y:Int, v:Int) {
+	public inline function set(x:Int, y:Int, v:Int) {
 		var p = (x + y * bounds.width) * 4;
 		data.setInt32(p, v);
 		return v;
@@ -154,7 +198,7 @@ class Image {
 
 	public function writePng(file:String) {
 		var fout = sys.io.File.write(file);
-		new format.png.Writer(fout).write(format.png.Tools.build32BGRA(bounds.width,bounds.height,data));
+		new format.png.Writer(fout).write(format.png.Tools.build32BGRA(bounds.width, bounds.height, data));
 		fout.close();
 	}
 }

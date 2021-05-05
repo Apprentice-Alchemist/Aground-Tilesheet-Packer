@@ -1,4 +1,8 @@
 -cp src
 -lib format
-# -cp C:\Program Files (x86)\Steam\steamapps\common\Aground
+--macro nullSafety("Main")
+--macro nullSafety("Types")
+--macro nullSafety("Utils")
+
+-cp C:\Program Files (x86)\Steam\steamapps\common\Aground
 --run Main
