@@ -18,10 +18,8 @@ function main() {
 						var s = {
 							width: parseInt(args.shift()),
 							height: parseInt(args.shift()),
-							files: {
-								var files = [];
-								while (true) {
-									var arg = args[0];
+							files: [while(true) {
+								var arg = args[0];
 									if (arg != "-i" && arg != "-o" && arg != null) {
 										args.shift();
 										var f = arg;
@@ -29,16 +27,36 @@ function main() {
 											if (FileSystem.isDirectory(f)) {
 												for (s in FileSystem.readDirectory(f)) {
 													if (!FileSystem.isDirectory(s))
-														files.push(s);
+														s;
+													else continue;
 												}
 											} else {
-												files.push(f);
+												f;
 											}
-										}
+										} else continue;
 									}
-								}
-								files;
-							}
+							}] 
+							// {
+							// 	var files = [];
+							// 	while (true) {
+							// 		var arg = args[0];
+							// 		if (arg != "-i" && arg != "-o" && arg != null) {
+							// 			args.shift();
+							// 			var f = arg;
+							// 			if (FileSystem.exists(f)) {
+							// 				if (FileSystem.isDirectory(f)) {
+							// 					for (s in FileSystem.readDirectory(f)) {
+							// 						if (!FileSystem.isDirectory(s))
+							// 							files.push(s);
+							// 					}
+							// 				} else {
+							// 					files.push(f);
+							// 				}
+							// 			}
+							// 		}
+							// 	}
+							// 	files;
+							// }
 						};
 						if (s.width == null || s.height == null)
 							error("sheet width and height should be valid integers");
